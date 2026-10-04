@@ -113,12 +113,12 @@
 
     @media(max-width:900px){
       .shell{display:block;}
-      .sidebar{position:sticky;top:0;z-index:100;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding:12px 16px 0;}
+      .sidebar{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding:12px 16px 0;}
       .sidebar .header-badge{display:none;}
       .api-status{margin:0;order:2;}
-      .nav-tabs{order:3;flex-direction:row;width:100%;overflow-x:auto;gap:0;}
-      .nav-tab{white-space:nowrap;border-left:none;border-bottom:3px solid transparent;border-radius:0;padding:10px 14px;}
-      .nav-tab.active{border-bottom-color:var(--ochre);background:none;}
+      .nav-tabs{order:3;flex-direction:row;flex-wrap:wrap;width:100%;gap:6px;padding-bottom:12px;}
+      .nav-tab{flex:1 1 auto;text-align:center;border-left:none;border-radius:var(--radius);padding:9px 12px;background:rgba(255,255,255,0.06);}
+      .nav-tab.active{background:var(--ochre);color:var(--ink);}
       .main{padding:20px 16px 40px;}
       .hero{grid-template-columns:1fr;gap:24px;}
     }
@@ -139,7 +139,7 @@
 <aside class="sidebar">
   <div>
     <h1>Uganda CPI Intelligence</h1>
-    <span class="header-badge">Jul 2017 – Jun 2026</span>
+    <span class="header-badge" id="datasetBadge">Loading…</span>
   </div>
   <nav class="nav-tabs" aria-label="Dashboard sections">
   <button class="nav-tab active" onclick="showSection('overview',this)">Overview</button>
@@ -160,19 +160,19 @@
 <section class="section active" id="sec-overview">
   <div class="hero" id="kpiRow">
     <div>
-      <div class="hero-label">Annual inflation, <span id="hero-date">latest month</span></div>
+      <div class="hero-label">Annual inflation · <span id="kpi-annual-sub">Year-on-year</span></div>
       <div class="hero-figure" id="kpi-annual">—</div>
       <p class="hero-note" id="hero-note">Loading the latest reading…</p>
     </div>
     <div class="hero-stats">
-      <div class="card"><div class="card-title">Latest CPI</div><div class="card-value" id="kpi-cpi">—</div><div class="card-sub">Jun 2026, base 2016/17=100</div></div>
-      <div class="card"><div class="card-title">Growth since Jul 2017</div><div class="card-value" id="kpi-growth">—</div><div class="card-sub">Cumulative</div></div>
+      <div class="card"><div class="card-title">Latest CPI</div><div class="card-value" id="kpi-cpi">—</div><div class="card-sub" id="kpi-cpi-sub">Latest month (base 2016/17=100)</div></div>
+      <div class="card"><div class="card-title">Cumulative growth</div><div class="card-value" id="kpi-growth">—</div><div class="card-sub" id="kpi-growth-sub">—</div></div>
       <div class="card"><div class="card-title">Peak annual rate</div><div class="card-value" id="kpi-peak">—</div><div class="card-sub" id="kpi-peak-date">—</div></div>
     </div>
   </div>
   <div class="chart-card">
     <div class="chart-header">
-      <div><div class="chart-title">Headline CPI — Monthly Index & Annual Inflation Rate</div><div class="chart-sub">All Items, 2016/17=100 · 108 monthly observations</div></div>
+      <div><div class="chart-title">Headline CPI — Monthly Index & Annual Inflation Rate</div><div class="chart-sub"><span id="chart-sub-obs">All Items, 2016/17=100</span></div></div>
     </div>
     <div class="chart-wrap-lg"><canvas id="chartHeadline"></canvas></div>
   </div>
@@ -206,7 +206,7 @@
     </div>
   </div>
   <div class="chart-card mt-4">
-    <div class="chart-header"><div><div class="chart-title">Cumulative CPI Growth by Category</div><div class="chart-sub">% growth since July 2017</div></div></div>
+    <div class="chart-header"><div><div class="chart-title">Cumulative CPI Growth by Category</div><div class="chart-sub" id="chart-sub-growth">% growth since the first month</div></div></div>
     <div class="chart-wrap-lg"><canvas id="chartGrowth"></canvas></div>
   </div>
 </section>
@@ -263,8 +263,8 @@
 <!-- SECTION 4: ESSENTIAL VS DISCRETIONARY -->
 <section class="section" id="sec-essential">
   <div class="grid-3">
-    <div class="card"><div class="card-title">Essential Mean Inflation</div><div class="card-value" id="evd-ess">—</div><div class="card-sub">Food, Housing, Health, Transport, Education</div></div>
-    <div class="card"><div class="card-title">Discretionary Mean Inflation</div><div class="card-value" id="evd-disc">—</div><div class="card-sub">All other 8 categories</div></div>
+    <div class="card"><div class="card-title">Essential Mean Inflation</div><div class="card-value" id="evd-ess">—</div><div class="card-sub" id="evd-ess-sub">Food, Clothing, Housing, Health, Transport, Education</div></div>
+    <div class="card"><div class="card-title">Discretionary Mean Inflation</div><div class="card-value" id="evd-disc">—</div><div class="card-sub" id="evd-disc-sub">All other categories</div></div>
     <div class="card"><div class="card-title">Welch t-test p-value</div><div class="card-value" id="evd-p">—</div><div class="card-sub" id="evd-sig">—</div></div>
   </div>
   <div class="chart-card">
@@ -286,6 +286,9 @@
       </div>
     </div>
     <div class="chart-wrap-lg"><canvas id="chartForecast"></canvas></div>
+    <p class="mb-4" id="forecastReliabilityNote" style="font-size:0.85rem;color:var(--muted,#6b7280);margin-top:12px">
+      <strong>How reliable is this?</strong> The 1-month forecast is the most dependable. Accuracy falls as the forecast looks further ahead, so treat the 2- and 3-month values as indicative and use the shaded 90% range, which widens with each month, rather than the single line.
+    </p>
   </div>
 
   <!-- Forecast values table -->
@@ -318,7 +321,7 @@
 </div>
 
 <script>
-const API_BASE = "https://ugandacpi.up.railway.app/api/v1";
+const API_BASE = "http://localhost:5000/api/v1";
 
 Chart.defaults.font.family = "'Public Sans',system-ui,sans-serif";
 Chart.defaults.font.size   = 11;
@@ -390,11 +393,16 @@ async function loadOverview() {
     document.getElementById("kpi-growth").textContent = fmtPct(summary.cumulative_growth_pct);
     document.getElementById("kpi-peak").textContent   = fmtPct(summary.max_annual_rate.rate);
     document.getElementById("kpi-peak-date").textContent = summary.max_annual_rate.date;
+    document.getElementById("datasetBadge").textContent  = `${summary.first_period} – ${summary.latest_period}`;
+    document.getElementById("kpi-cpi-sub").textContent    = `${summary.latest_period} (base 2016/17=100)`;
+    document.getElementById("kpi-annual-sub").textContent = `Year-on-year, ${summary.latest_period}`;
+    document.getElementById("kpi-growth-sub").textContent = `${summary.first_period} → ${summary.latest_period}`;
 
+    document.getElementById("chart-sub-obs").textContent = `All Items, 2016/17=100 · ${Object.keys(headline.cpi).length} monthly observations`;
+    document.getElementById("chart-sub-growth").textContent = `% growth since ${summary.first_period}`;
     const annEl = document.getElementById("kpi-annual");
     annEl.style.color = latestAnnual > 5 ? "var(--red)" : latestAnnual > 3 ? "var(--gold)" : "var(--green)";
     const annSeries = Object.entries(headline.annual_pct).filter(([,v]) => v != null);
-    document.getElementById("hero-date").textContent = shortDate(annSeries.at(-1)[0]);
     if (annSeries.length > 1) {
       const diff = latestAnnual - annSeries.at(-2)[1];
       const band = latestAnnual > 5 ? "above" : latestAnnual > 3 ? "within" : "below";
@@ -573,7 +581,7 @@ async function populateDateSelects() {
       targetEl.insertAdjacentHTML("beforeend", `<option value="${d}">${label}</option>`);
     });
 
-    // Default: base = first (Jul 2017), target = last (Jun 2026)
+    // Default: base = first month in the data, target = latest month
     baseEl.selectedIndex   = 0;
     targetEl.selectedIndex = dates.length - 1;
   } catch(err) {
@@ -653,6 +661,11 @@ async function loadEssential() {
 
     document.getElementById("evd-ess").textContent  = fmtPct(data.essential_mean);
     document.getElementById("evd-disc").textContent = fmtPct(data.discretionary_mean);
+    if (data.n_discretionary != null)
+      document.getElementById("evd-disc-sub").textContent = `All other ${data.n_discretionary} categories`;
+    if (data.essential_categories)
+      document.getElementById("evd-ess-sub").textContent =
+        `${data.n_essential} categories: Food, Clothing, Housing, Health, Transport, Education`;
     document.getElementById("evd-p").textContent    = data.p_value.toFixed(4);
 
     const pEl  = document.getElementById("evd-p");
