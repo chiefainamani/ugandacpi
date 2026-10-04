@@ -104,6 +104,7 @@
     .error-box{background:var(--red-light);border:1px solid #F3C4BF;border-radius:var(--radius);padding:14px 16px;color:var(--red);font-size:0.86rem;}
 
     .text-right{text-align:right;}
+    .text-orange{color:#C25B00;}
     .text-green{color:var(--green);}
     .text-red{color:var(--red);}
     .text-muted{color:var(--text-secondary);}
@@ -503,7 +504,7 @@ async function loadDrivers() {
         labels: drivers.map(d => d.category.length>28?d.category.slice(0,28)+"…":d.category),
         datasets:[{
           label:"Contribution (pp)", data:drivers.map(d=>d.contribution),
-          backgroundColor: drivers.map(d=>d.contribution>0?"rgba(179,38,30,0.7)":"rgba(194,138,18,0.7)"),
+          backgroundColor: drivers.map(d=>d.contribution>0?"rgba(179,38,30,0.7)":"rgba(232,113,10,0.7)"),
           borderWidth:0, borderRadius:3,
         }],
       },
@@ -728,20 +729,20 @@ async function loadForecast() {
           {
             label: "Forecast",
             data: pointData,
-            borderColor: "#C28A12", backgroundColor: "transparent",
-            tension: 0.2, pointRadius: 4, pointBackgroundColor: "#C28A12",
+            borderColor: "#E8710A", backgroundColor: "transparent",
+            tension: 0.2, pointRadius: 4, pointBackgroundColor: "#E8710A",
             borderWidth: 2,
           },
           {
             label: "Upper (90%)",
             data: upperData,
-            borderColor: "rgba(194,138,18,0.25)", backgroundColor: "transparent",
+            borderColor: "rgba(232,113,10,0.25)", backgroundColor: "transparent",
             tension: 0.2, pointRadius: 0, borderWidth: 1, borderDash: [2, 4],
           },
           {
             label: "Lower (90%)",
             data: lowerData,
-            borderColor: "rgba(194,138,18,0.25)", backgroundColor: "rgba(194,138,18,0.08)",
+            borderColor: "rgba(232,113,10,0.25)", backgroundColor: "rgba(232,113,10,0.08)",
             tension: 0.2, pointRadius: 0, borderWidth: 1, borderDash: [2, 4],
             fill: "-1",
           },
@@ -766,10 +767,10 @@ async function loadForecast() {
       fc.forecast_labels.map((lbl, i) => `
         <tr>
           <td><strong>${lbl}</strong></td>
-          <td class="text-right text-green"><strong>${cell(fc.point[i])}</strong></td>
+          <td class="text-right text-orange"><strong>${cell(fc.point[i])}</strong></td>
           <td class="text-right text-muted">${cell(fc.lower[i])}</td>
           <td class="text-right text-muted">${cell(fc.upper[i])}</td>
-          <td class="text-right text-green"><strong>${pct(fc.annual_pct_point?.[i])}</strong></td>
+          <td class="text-right text-orange"><strong>${pct(fc.annual_pct_point?.[i])}</strong></td>
           <td class="text-right text-muted">${pct(fc.annual_pct_lower?.[i])}</td>
           <td class="text-right text-muted">${pct(fc.annual_pct_upper?.[i])}</td>
         </tr>`).join("");
