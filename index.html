@@ -329,6 +329,11 @@ Chart.defaults.plugins.tooltip.padding        = 10;
 Chart.defaults.plugins.tooltip.backgroundColor = "#14201C";
 Chart.defaults.plugins.tooltip.titleColor      = "#F1F3EF";
 Chart.defaults.plugins.tooltip.bodyColor       = "#C9D4CD";
+Chart.defaults.plugins.tooltip.callbacks.label = ctx => {
+  const v = ctx.chart.options.indexAxis === "y" ? ctx.parsed.x : ctx.parsed.y;
+  const num = v == null ? "—" : Number(v).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+  return `${ctx.dataset.label ? ctx.dataset.label + ": " : ""}${num}`;
+};
 
 let charts = {};
 
