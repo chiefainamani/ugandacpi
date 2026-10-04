@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Uganda CPI Intelligence Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:           #F8F9FA;
+      --surface:      #FFFFFF;
+      --border:       #E2E8F0;
+      --text-primary: #1A202C;
+      --text-secondary:#64748B;
+      --accent:       #1D4ED8;
+      --accent-light: #EFF6FF;
+      --gold:         #B45309;
+      --gold-light:   #FEF3C7;
+      --green:        #15803D;
+      --green-light:  #DCFCE7;
+      --red:          #B91C1C;
+      --red-light:    #FEE2E2;
+      --radius:       8px;
+      --shadow:       0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);
+      --font:         'Inter',system-ui,-apple-system,sans-serif;
+      --mono:         'JetBrains Mono','Fira Code',monospace;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font);background:var(--bg);color:var(--text-primary);font-size:14px;line-height:1.6;}
+    h1{font-size:1.5rem;font-weight:700;letter-spacing:-0.02em;}
+    h2{font-size:1.1rem;font-weight:600;letter-spacing:-0.01em;}
+    h3{font-size:0.95rem;font-weight:600;}
+    p{color:var(--text-secondary);}
+
+    .app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+    .header-left{display:flex;align-items:center;gap:12px;}
+    .header-badge{background:var(--accent-light);color:var(--accent);font-size:0.7rem;font-weight:600;padding:2px 8px;border-radius:99px;letter-spacing:0.05em;text-transform:uppercase;}
+    .api-status{display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-secondary);}
+    .status-dot{width:8px;height:8px;border-radius:50%;background:#D1D5DB;transition:background 0.3s;}
+    .status-dot.ok{background:#22C55E;}
+    .status-dot.err{background:#EF4444;}
+
+    .nav-tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 24px;overflow-x:auto;}
+    .nav-tab{padding:12px 18px;border:none;background:none;cursor:pointer;font-size:0.85rem;font-weight:500;color:var(--text-secondary);border-bottom:2px solid transparent;white-space:nowrap;transition:color 0.15s,border-color 0.15s;}
+    .nav-tab:hover{color:var(--text-primary);}
+    .nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+    .main{padding:24px;max-width:1200px;margin:0 auto;}
+    .section{display:none;}
+    .section.active{display:block;}
+
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);}
+    .card-title{font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-secondary);margin-bottom:6px;}
+    .card-value{font-size:1.9rem;font-weight:700;letter-spacing:-0.03em;}
+    .card-sub{font-size:0.78rem;color:var(--text-secondary);margin-top:2px;}
+
+    .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+    .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:20px;}
+
+    .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:20px;}
+    .chart-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
+    .chart-title{font-size:0.9rem;font-weight:600;}
+    .chart-sub{font-size:0.78rem;color:var(--text-secondary);margin-top:2px;}
+    .chart-wrap{position:relative;height:260px;}
+    .chart-wrap-lg{position:relative;height:320px;}
+
+    .data-table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+    .data-table th{background:var(--bg);padding:8px 12px;text-align:left;font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);border-bottom:1px solid var(--border);}
+    .data-table td{padding:9px 12px;border-bottom:1px solid var(--border);}
+    .data-table tr:last-child td{border-bottom:none;}
+    .data-table tr:hover td{background:var(--bg);}
+
+    .verdict{border-radius:var(--radius);padding:14px 16px;margin-top:16px;font-size:0.85rem;line-height:1.5;}
+    .verdict.significant{background:var(--red-light);border-left:3px solid var(--red);}
+    .verdict.insignificant{background:var(--green-light);border-left:3px solid var(--green);}
+    .verdict.info{background:var(--accent-light);border-left:3px solid var(--accent);}
+
+    .calc-row{display:flex;align-items:flex-end;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+    .calc-field{display:flex;flex-direction:column;gap:4px;}
+    .calc-label{font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);}
+    .calc-input{padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);font-size:0.9rem;font-family:var(--mono);outline:none;transition:border-color 0.15s;background:var(--surface);}
+    .calc-input:focus{border-color:var(--accent);}
+    .calc-btn{padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-size:0.85rem;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;}
+    .calc-btn:hover{opacity:0.88;}
+
+    .burden-result{background:var(--accent-light);border:1px solid #BFDBFE;border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;display:none;}
+    .burden-big{font-size:2rem;font-weight:700;color:var(--accent);letter-spacing:-0.03em;}
+    .burden-label{font-size:0.82rem;color:var(--text-secondary);margin-top:2px;}
+
+    .metric-row{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
+    .metric-pill{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;flex:1;min-width:120px;}
+    .metric-label{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);}
+    .metric-value{font-size:1.2rem;font-weight:700;margin-top:2px;}
+    .metric-value.good{color:var(--green);}
+
+    .skeleton{background:linear-gradient(90deg,#F1F5F9 25%,#E2E8F0 50%,#F1F5F9 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:4px;height:16px;margin-bottom:8px;}
+    @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+    .error-box{background:var(--red-light);border:1px solid #FECACA;border-radius:var(--radius);padding:14px 16px;color:var(--red);font-size:0.85rem;}
+
+    .text-right{text-align:right;}
+    .text-green{color:var(--green);}
+    .text-red{color:var(--red);}
+    .text-muted{color:var(--text-secondary);}
+    .mt-4{margin-top:16px;}
+    .mb-4{margin-bottom:16px;}
+
+    @media(max-width:768px){
+      .grid-4{grid-template-columns:repeat(2,1fr);}
+      .grid-2,.grid-3{grid-template-columns:1fr;}
+      .main{padding:16px;}
+      .calc-row{flex-direction:column;align-items:stretch;}
+    }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-left">
+    <h1>Uganda CPI Intelligence</h1>
+    <span class="header-badge">Jul 2017 – Jun 2026</span>
+  </div>
+  <div class="api-status">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusLabel">Connecting…</span>
+  </div>
+</header>
+
+<nav class="nav-tabs">
+  <button class="nav-tab active" onclick="showSection('overview',this)">Overview</button>
+  <button class="nav-tab" onclick="showSection('drivers',this)">Inflation Drivers</button>
+  <button class="nav-tab" onclick="showSection('calculator',this)">Household Calculator</button>
+  <button class="nav-tab" onclick="showSection('essential',this)">Essential vs Discretionary</button>
+  <button class="nav-tab" onclick="showSection('forecast',this)">3-Month Forecast</button>
+</nav>
+
+<main class="main">
+
+<!-- SECTION 1: OVERVIEW -->
+<section class="section active" id="sec-overview">
+  <div class="grid-4" id="kpiRow">
+    <div class="card"><div class="card-title">Latest CPI</div><div class="card-value" id="kpi-cpi">—</div><div class="card-sub">Jun 2026 (base 2016/17=100)</div></div>
+    <div class="card"><div class="card-title">Annual Inflation</div><div class="card-value" id="kpi-annual">—</div><div class="card-sub">Year-on-year, Jun 2026</div></div>
+    <div class="card"><div class="card-title">Cumulative Growth</div><div class="card-value" id="kpi-growth">—</div><div class="card-sub">Jul 2017 → Jun 2026</div></div>
+    <div class="card"><div class="card-title">Peak Inflation</div><div class="card-value" id="kpi-peak">—</div><div class="card-sub" id="kpi-peak-date">—</div></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-header">
+      <div><div class="chart-title">Headline CPI — Monthly Index & Annual Inflation Rate</div><div class="chart-sub">All Items, 2016/17=100 · 108 monthly observations</div></div>
+    </div>
+    <div class="chart-wrap-lg"><canvas id="chartHeadline"></canvas></div>
+  </div>
+  <div class="grid-2">
+    <div class="chart-card" style="margin-bottom:0">
+      <div class="chart-header"><div><div class="chart-title">Month-on-Month Change</div><div class="chart-sub">Headline CPI volatility</div></div></div>
+      <div class="chart-wrap"><canvas id="chartMonthly"></canvas></div>
+    </div>
+    <div class="chart-card" style="margin-bottom:0">
+      <div class="chart-header"><div><div class="chart-title">Anomalous Inflation Months</div><div class="chart-sub">Z-score &gt; 2.0 standard deviations from mean</div></div></div>
+      <div class="chart-wrap"><canvas id="chartAnomalies"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: DRIVERS -->
+<section class="section" id="sec-drivers">
+  <div class="grid-2">
+    <div class="chart-card" style="margin-bottom:0">
+      <div class="chart-header"><div><div class="chart-title">Weighted Contribution to Headline Inflation</div><div class="chart-sub">Latest period · percentage points</div></div></div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th>Category</th><th class="text-right">Ann. Rate %</th><th class="text-right">Weight</th><th class="text-right">Contribution pp</th></tr></thead>
+          <tbody id="driversBody"><tr><td colspan="4"><div class="skeleton"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="chart-card" style="margin-bottom:0">
+      <div class="chart-header"><div><div class="chart-title">Contribution Ranking</div><div class="chart-sub">Percentage points to headline annual rate</div></div></div>
+      <div class="chart-wrap-lg"><canvas id="chartContrib"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-card mt-4">
+    <div class="chart-header"><div><div class="chart-title">Cumulative CPI Growth by Category</div><div class="chart-sub">% growth since July 2017</div></div></div>
+    <div class="chart-wrap-lg"><canvas id="chartGrowth"></canvas></div>
+  </div>
+</section>
+
+<!-- SECTION 3: HOUSEHOLD CALCULATOR -->
+<section class="section" id="sec-calculator">
+  <div class="chart-card">
+    <h2 class="mb-4">Household Cost Burden Calculator</h2>
+    <p class="mb-4">Enter your monthly basket and choose any two months within the dataset to compare how much more that basket costs.</p>
+
+    <div class="calc-row">
+      <div class="calc-field" style="flex:2;min-width:180px">
+        <label class="calc-label">Monthly basket (UGX)</label>
+        <input class="calc-input" type="number" id="basketInput" placeholder="e.g. 500000" min="1000" step="10000" value="500000" />
+      </div>
+      <div class="calc-field" style="flex:1;min-width:150px">
+        <label class="calc-label">From (base period)</label>
+        <select class="calc-input" id="baseSelect" style="cursor:pointer"></select>
+      </div>
+      <div class="calc-field" style="flex:1;min-width:150px">
+        <label class="calc-label">To (comparison period)</label>
+        <select class="calc-input" id="targetSelect" style="cursor:pointer"></select>
+      </div>
+      <button class="calc-btn" onclick="calculateBurden()">Calculate</button>
+    </div>
+
+    <div class="burden-result" id="burdenResult">
+      <div class="burden-label" id="burdenPeriodLabel">—</div>
+      <div class="burden-big" id="burdenExtra">—</div>
+      <div class="burden-label" id="burdenGrowth">—</div>
+    </div>
+  </div>
+
+  <div class="grid-2" id="burdenCharts" style="display:none">
+    <div class="chart-card" style="margin-bottom:0">
+      <div class="chart-title">Burden by Category</div>
+      <div class="chart-sub mb-4">Extra UGX per category based on your basket</div>
+      <div class="chart-wrap-lg"><canvas id="chartBurden"></canvas></div>
+    </div>
+    <div class="chart-card" style="margin-bottom:0">
+      <div class="chart-title">Top 5 Cost Drivers</div>
+      <div class="chart-sub mb-4">Categories adding the most to your basket cost</div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th>Category</th><th class="text-right">Extra UGX</th><th class="text-right">Growth %</th></tr></thead>
+          <tbody id="burdenBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: ESSENTIAL VS DISCRETIONARY -->
+<section class="section" id="sec-essential">
+  <div class="grid-3">
+    <div class="card"><div class="card-title">Essential Mean Inflation</div><div class="card-value" id="evd-ess">—</div><div class="card-sub">Food, Housing, Health, Transport, Education</div></div>
+    <div class="card"><div class="card-title">Discretionary Mean Inflation</div><div class="card-value" id="evd-disc">—</div><div class="card-sub">All other 8 categories</div></div>
+    <div class="card"><div class="card-title">Welch t-test p-value</div><div class="card-value" id="evd-p">—</div><div class="card-sub" id="evd-sig">—</div></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-header"><div><div class="chart-title">Essential vs Discretionary — Monthly Mean Annual Inflation</div><div class="chart-sub">Average annual % change across each group of categories</div></div></div>
+    <div class="chart-wrap-lg"><canvas id="chartEvd"></canvas></div>
+    <div class="verdict" id="evdVerdict"></div>
+  </div>
+</section>
+
+<!-- SECTION 5: FORECAST -->
+<section class="section" id="sec-forecast">
+
+  <!-- Forecast chart -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title" id="forecastTitle">CPI Forecast</div>
+        <div class="chart-sub" id="forecastSub">90% prediction interval · last 24 months shown</div>
+      </div>
+    </div>
+    <div class="chart-wrap-lg"><canvas id="chartForecast"></canvas></div>
+  </div>
+
+  <!-- Forecast values table -->
+  <div class="chart-card">
+    <h3 class="mb-4">Forecast Values</h3>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th class="text-right" id="thModel">ML Point</th>
+          <th class="text-right">Lower (90%)</th>
+          <th class="text-right">Upper (90%)</th>
+          <th class="text-right">Annual %</th>
+          <th class="text-right">Annual % Lower</th>
+          <th class="text-right">Annual % Upper</th>
+        </tr>
+      </thead>
+      <tbody id="forecastBody">
+        <tr><td colspan="7"><div class="skeleton"></div></td></tr>
+      </tbody>
+    </table>
+    <div class="verdict info mt-4" style="font-size:0.82rem" id="modelNote">
+      <strong>Model note:</strong> loading…
+    </div>
+  </div>
+
+</section>
+
+</main>
+
+<script>
+const API_BASE = "http://localhost:5000/api/v1";
+
+Chart.defaults.font.family = "'Inter',system-ui,sans-serif";
+Chart.defaults.font.size   = 11;
+Chart.defaults.color       = "#64748B";
+Chart.defaults.plugins.legend.labels.boxWidth = 12;
+Chart.defaults.plugins.legend.labels.padding  = 16;
+Chart.defaults.plugins.tooltip.padding        = 10;
+Chart.defaults.plugins.tooltip.backgroundColor = "#1A202C";
+Chart.defaults.plugins.tooltip.titleColor      = "#F8F9FA";
+Chart.defaults.plugins.tooltip.bodyColor       = "#CBD5E1";
+
+let charts = {};
+
+// Navigation
+function showSection(id, btn) {
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
+  document.getElementById("sec-" + id).classList.add("active");
+  btn.classList.add("active");
+}
+
+// Formatters
+const fmt    = n => n == null ? "—" : Number(n).toFixed(2);
+const fmtPct = n => n == null ? "—" : Number(n).toFixed(2) + "%";
+const fmtUGX = n => n == null ? "—" : "UGX " + Number(n).toLocaleString("en-UG", {maximumFractionDigits:0});
+const shortDate = d => new Date(d).toLocaleDateString("en-GB", {month:"short", year:"2-digit"});
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+async function apiFetch(endpoint) {
+  const res = await fetch(API_BASE + endpoint);
+  if (!res.ok) throw new Error(`HTTP ${res.status} on ${endpoint}`);
+  return res.json();
+}
+
+// API status check
+async function checkStatus() {
+  const dot = document.getElementById("statusDot");
+  const lbl = document.getElementById("statusLabel");
+  try {
+    await apiFetch("/");
+    dot.className = "status-dot ok";
+    lbl.textContent = "API connected";
+  } catch {
+    dot.className = "status-dot err";
+    lbl.textContent = "API offline — start the Flask server";
+  }
+}
+
+// SECTION 1: OVERVIEW
+async function loadOverview() {
+  try {
+    const [summary, headline, anomalyData] = await Promise.all([
+      apiFetch("/summary"),
+      apiFetch("/headline"),
+      apiFetch("/anomalies"),
+    ]);
+
+    const latestAnnual = Object.values(headline.annual_pct).filter(v => v != null).at(-1);
+    document.getElementById("kpi-cpi").textContent    = fmt(summary.latest_cpi);
+    document.getElementById("kpi-annual").textContent = fmtPct(latestAnnual);
+    document.getElementById("kpi-growth").textContent = fmtPct(summary.cumulative_growth_pct);
+    document.getElementById("kpi-peak").textContent   = fmtPct(summary.max_annual_rate.rate);
+    document.getElementById("kpi-peak-date").textContent = summary.max_annual_rate.date;
+
+    const annEl = document.getElementById("kpi-annual");
+    annEl.style.color = latestAnnual > 5 ? "var(--red)" : latestAnnual > 3 ? "var(--gold)" : "var(--green)";
+
+    const dates   = Object.keys(headline.cpi);
+    const cpiVals = Object.values(headline.cpi);
+    const annVals = Object.values(headline.annual_pct);
+
+    destroyChart("headline");
+    charts.headline = new Chart(document.getElementById("chartHeadline"), {
+      data: {
+        labels: dates.map(shortDate),
+        datasets: [
+          { type:"line", label:"CPI Index", data:cpiVals, borderColor:"#1D4ED8", backgroundColor:"rgba(29,78,216,0.08)", fill:true, tension:0.3, pointRadius:0, borderWidth:2, yAxisID:"y" },
+          { type:"line", label:"Annual Inflation %", data:annVals, borderColor:"#B45309", backgroundColor:"transparent", tension:0.3, pointRadius:0, borderWidth:1.5, borderDash:[4,3], yAxisID:"y1" },
+        ],
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        interaction:{mode:"index",intersect:false},
+        plugins:{legend:{position:"top"}},
+        scales:{
+          x:{grid:{display:false},ticks:{maxTicksLimit:12}},
+          y:{position:"left",title:{display:true,text:"CPI Index"},grid:{color:"#F1F5F9"}},
+          y1:{position:"right",title:{display:true,text:"Annual %"},grid:{display:false}},
+        },
+      },
+    });
+
+    const monthVals = Object.values(headline.monthly_pct);
+    destroyChart("monthly");
+    charts.monthly = new Chart(document.getElementById("chartMonthly"), {
+      type:"bar",
+      data:{
+        labels: dates.map(shortDate),
+        datasets:[{
+          label:"Month-on-Month %", data:monthVals,
+          backgroundColor: monthVals.map(v => v==null?"transparent":v>=0?"rgba(29,78,216,0.6)":"rgba(185,28,28,0.6)"),
+          borderWidth:0,
+        }],
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{grid:{display:false},ticks:{maxTicksLimit:12}},
+          y:{grid:{color:"#F1F5F9"},ticks:{callback:v=>v+"%"}},
+        },
+      },
+    });
+
+    const anomalies   = anomalyData.anomalies || [];
+    destroyChart("anomalies");
+    charts.anomalies = new Chart(document.getElementById("chartAnomalies"), {
+      type:"bar",
+      data:{
+        labels: anomalies.map(a => a.month_label),
+        datasets:[{
+          label:"Annual Inflation %",
+          data: anomalies.map(a => a.annual_rate),
+          backgroundColor: anomalies.map(a => a.direction==="high"?"rgba(185,28,28,0.8)":"rgba(29,78,216,0.8)"),
+          borderWidth:0, borderRadius:4,
+        }],
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.raw.toFixed(2)}% (${anomalies[ctx.dataIndex]?.direction})`}}},
+        scales:{
+          x:{grid:{display:false}},
+          y:{grid:{color:"#F1F5F9"},ticks:{callback:v=>v+"%"}},
+        },
+      },
+    });
+  } catch(err) {
+    console.error("Overview error:", err);
+    document.getElementById("kpiRow").innerHTML = `<div class="error-box" style="grid-column:1/-1">Could not load data. Make sure the Flask API server is running on port 5000.</div>`;
+  }
+}
+
+// SECTION 2: DRIVERS
+async function loadDrivers() {
+  try {
+    const [driversData, growthData] = await Promise.all([
+      apiFetch("/drivers"),
+      apiFetch("/growth"),
+    ]);
+
+    const drivers    = driversData.drivers.filter(d => d.category !== "All Items");
+    const maxContrib = Math.max(...drivers.map(d => Math.abs(d.contribution)));
+
+    document.getElementById("driversBody").innerHTML = drivers.map(d => {
+      const bw  = Math.round((Math.abs(d.contribution) / maxContrib) * 60);
+      const cls = d.contribution > 0 ? "text-red" : "text-green";
+      return `<tr>
+        <td>${d.category}</td>
+        <td class="text-right ${cls}">${fmtPct(d.annual_rate)}</td>
+        <td class="text-right text-muted">${fmt(d.weight)}</td>
+        <td class="text-right ${cls}" style="position:relative;padding-left:${bw+8}px">
+          <div style="position:absolute;left:6px;top:50%;transform:translateY(-50%);height:4px;width:${bw}px;background:currentColor;border-radius:2px;opacity:0.3"></div>
+          ${fmt(d.contribution)}
+        </td>
+      </tr>`;
+    }).join("");
+
+    destroyChart("contrib");
+    charts.contrib = new Chart(document.getElementById("chartContrib"), {
+      type:"bar",
+      data:{
+        labels: drivers.map(d => d.category.length>28?d.category.slice(0,28)+"…":d.category),
+        datasets:[{
+          label:"Contribution (pp)", data:drivers.map(d=>d.contribution),
+          backgroundColor: drivers.map(d=>d.contribution>0?"rgba(185,28,28,0.7)":"rgba(21,128,61,0.7)"),
+          borderWidth:0, borderRadius:3,
+        }],
+      },
+      options:{
+        indexAxis:"y", responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{grid:{color:"#F1F5F9"},ticks:{callback:v=>v+" pp"}},
+          y:{grid:{display:false},ticks:{font:{size:10}}},
+        },
+      },
+    });
+
+    const growth    = growthData.growth;
+    const gDates    = Object.keys(Object.values(growth)[0]);
+    const PALETTE   = ["#1D4ED8","#B45309","#15803D","#7C3AED","#B91C1C","#0369A1"];
+    const topCats   = ["All Items",...drivers.slice(0,5).map(d=>d.category)];
+
+    destroyChart("growth");
+    charts.growth = new Chart(document.getElementById("chartGrowth"), {
+      type:"line",
+      data:{
+        labels: gDates.map(shortDate),
+        datasets: topCats.map((cat,i) => ({
+          label: cat==="All Items"?"Headline":cat.slice(0,30),
+          data:  Object.values(growth[cat]||{}),
+          borderColor: PALETTE[i%PALETTE.length],
+          backgroundColor:"transparent",
+          tension:0.3, pointRadius:0,
+          borderWidth: cat==="All Items"?2.5:1.5,
+        })),
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        interaction:{mode:"index",intersect:false},
+        plugins:{legend:{position:"top"}},
+        scales:{
+          x:{grid:{display:false},ticks:{maxTicksLimit:12}},
+          y:{grid:{color:"#F1F5F9"},ticks:{callback:v=>v+"%"}},
+        },
+      },
+    });
+  } catch(err) {
+    console.error("Drivers error:", err);
+    document.getElementById("driversBody").innerHTML = `<tr><td colspan="4"><div class="error-box">Could not load drivers data.</div></td></tr>`;
+  }
+}
+
+// SECTION 3: CALCULATOR — populate date selects
+async function populateDateSelects() {
+  try {
+    const data  = await apiFetch("/headline");
+    const dates = Object.keys(data.cpi);
+
+    const baseEl   = document.getElementById("baseSelect");
+    const targetEl = document.getElementById("targetSelect");
+
+    dates.forEach(d => {
+      const label = new Date(d).toLocaleDateString("en-GB", {month:"short", year:"numeric"});
+      baseEl.insertAdjacentHTML("beforeend",   `<option value="${d}">${label}</option>`);
+      targetEl.insertAdjacentHTML("beforeend", `<option value="${d}">${label}</option>`);
+    });
+
+    // Default: base = first (Jul 2017), target = last (Jun 2026)
+    baseEl.selectedIndex   = 0;
+    targetEl.selectedIndex = dates.length - 1;
+  } catch(err) {
+    console.error("Could not populate date selects:", err);
+  }
+}
+
+async function calculateBurden() {
+  const basket = parseFloat(document.getElementById("basketInput").value);
+  if (!basket || basket <= 0) { alert("Please enter a positive basket amount."); return; }
+
+  const base   = document.getElementById("baseSelect").value;
+  const target = document.getElementById("targetSelect").value;
+
+  if (base >= target) {
+    alert("'From' period must be earlier than 'To' period.");
+    return;
+  }
+
+  try {
+    const data = await apiFetch(`/burden?basket=${basket}&base=${base}&target=${target}`);
+
+    document.getElementById("burdenResult").style.display = "block";
+    document.getElementById("burdenPeriodLabel").textContent =
+      `Additional monthly cost: ${data.base_period} → ${data.target_period}`;
+    document.getElementById("burdenExtra").textContent  = fmtUGX(data.headline_burden.extra_ugx);
+    document.getElementById("burdenGrowth").textContent =
+      `${fmtPct(data.headline_burden.growth_pct)} total price increase over the selected period`;
+
+    document.getElementById("burdenCharts").style.display = "grid";
+
+    const cats   = data.category_burdens.slice(0, 8);
+    const labels = cats.map(c => c.category.length>25?c.category.slice(0,25)+"…":c.category);
+
+    destroyChart("burden");
+    charts.burden = new Chart(document.getElementById("chartBurden"), {
+      type:"bar",
+      data:{
+        labels,
+        datasets:[{
+          label:"Extra UGX", data:cats.map(c=>c.extra_ugx),
+          backgroundColor:"rgba(29,78,216,0.65)",
+          borderWidth:0, borderRadius:4,
+        }],
+      },
+      options:{
+        indexAxis:"y", responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{grid:{color:"#F1F5F9"},ticks:{callback:v=>"UGX "+v.toLocaleString()}},
+          y:{grid:{display:false},ticks:{font:{size:10}}},
+        },
+      },
+    });
+
+    document.getElementById("burdenBody").innerHTML = data.category_burdens.slice(0,5).map(c=>`
+      <tr>
+        <td>${c.category}</td>
+        <td class="text-right text-red">${fmtUGX(c.extra_ugx)}</td>
+        <td class="text-right text-muted">${fmtPct(c.growth_pct)}</td>
+      </tr>`).join("");
+
+  } catch(err) {
+    console.error("Burden error:", err);
+    const el = document.getElementById("burdenResult");
+    el.style.display = "block";
+    el.innerHTML = `<div class="error-box">Could not calculate burden: ${err.message}</div>`;
+  }
+}
+
+// SECTION 4: ESSENTIAL VS DISCRETIONARY
+async function loadEssential() {
+  try {
+    const data = await apiFetch("/essential-vs-discretionary");
+
+    document.getElementById("evd-ess").textContent  = fmtPct(data.essential_mean);
+    document.getElementById("evd-disc").textContent = fmtPct(data.discretionary_mean);
+    document.getElementById("evd-p").textContent    = data.p_value.toFixed(4);
+
+    const pEl  = document.getElementById("evd-p");
+    const sigEl = document.getElementById("evd-sig");
+    pEl.style.color = data.significant ? "var(--red)" : "var(--green)";
+    sigEl.textContent = data.significant ? "Statistically significant (p < 0.05)" : "Not significant (p ≥ 0.05)";
+
+    const ts     = data.timeseries;
+    const labels = ts.dates.map(shortDate);
+
+    destroyChart("evd");
+    charts.evd = new Chart(document.getElementById("chartEvd"), {
+      type:"line",
+      data:{
+        labels,
+        datasets:[
+          { label:"Essential categories", data:ts.essential_mean, borderColor:"#B91C1C", backgroundColor:"rgba(185,28,28,0.06)", fill:true, tension:0.3, pointRadius:0, borderWidth:2 },
+          { label:"Discretionary categories", data:ts.discretionary_mean, borderColor:"#1D4ED8", backgroundColor:"rgba(29,78,216,0.06)", fill:true, tension:0.3, pointRadius:0, borderWidth:2 },
+        ],
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        interaction:{mode:"index",intersect:false},
+        plugins:{legend:{position:"top"}},
+        scales:{
+          x:{grid:{display:false},ticks:{maxTicksLimit:12}},
+          y:{grid:{color:"#F1F5F9"},ticks:{callback:v=>v+"%"}},
+        },
+      },
+    });
+
+    const verdictEl = document.getElementById("evdVerdict");
+    verdictEl.className = "verdict " + (data.significant ? "significant" : "insignificant");
+    verdictEl.innerHTML = `<strong>Welch t-test result (p = ${data.p_value.toFixed(4)}):</strong> ${data.interpretation}`;
+  } catch(err) {
+    console.error("Essential vs Discretionary error:", err);
+  }
+}
+
+// SECTION 5: FORECAST — selected (best) machine-learning model only
+async function loadForecast() {
+  try {
+    const [fc, val, headlineData] = await Promise.all([
+      apiFetch("/forecast"),
+      apiFetch("/forecast/validation"),
+      apiFetch("/headline"),
+    ]);
+
+    const model = fc.model;
+    const allDates  = Object.keys(headlineData.cpi);
+    const allCPI    = Object.values(headlineData.cpi);
+    const last24D   = allDates.slice(-24);
+    const last24CPI = allCPI.slice(-24);
+    const nF = fc.forecast_dates.length;
+
+    document.getElementById("forecastTitle").textContent =
+      `CPI Forecast — ${fc.forecast_labels.join(" · ")}`;
+    document.getElementById("forecastSub").textContent =
+      `${model} · 90% prediction interval · last 24 months shown`;
+
+    const labels     = [...last24D, ...fc.forecast_dates].map(shortDate);
+    const actualData = [...last24CPI, ...Array(nF).fill(null)];
+    const pointData  = [...Array(23).fill(null), last24CPI.at(-1), ...fc.point];
+    const upperData  = [...Array(24).fill(null), ...fc.upper];
+    const lowerData  = [...Array(24).fill(null), ...fc.lower];
+
+    destroyChart("forecast");
+    charts.forecast = new Chart(document.getElementById("chartForecast"), {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Actual CPI",
+            data: actualData,
+            borderColor: "#1D4ED8", backgroundColor: "transparent",
+            tension: 0.2, pointRadius: 0, borderWidth: 2.5,
+          },
+          {
+            label: "Forecast",
+            data: pointData,
+            borderColor: "#15803D", backgroundColor: "transparent",
+            tension: 0.2, pointRadius: 4, pointBackgroundColor: "#15803D",
+            borderWidth: 2,
+          },
+          {
+            label: "Upper (90%)",
+            data: upperData,
+            borderColor: "rgba(21,128,61,0.25)", backgroundColor: "transparent",
+            tension: 0.2, pointRadius: 0, borderWidth: 1, borderDash: [2, 4],
+          },
+          {
+            label: "Lower (90%)",
+            data: lowerData,
+            borderColor: "rgba(21,128,61,0.25)", backgroundColor: "rgba(21,128,61,0.08)",
+            tension: 0.2, pointRadius: 0, borderWidth: 1, borderDash: [2, 4],
+            fill: "-1",
+          },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: { legend: { position: "top" } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { grid: { color: "#F1F5F9" }, ticks: { callback: v => v?.toFixed(1) } },
+        },
+        spanGaps: true,
+      },
+    });
+
+    const cell = v => (v != null ? fmt(v) : "—");
+    const pct  = v => (v != null ? fmtPct(v) : "—");
+    document.getElementById("thModel").textContent = "Forecast CPI";
+    document.getElementById("forecastBody").innerHTML =
+      fc.forecast_labels.map((lbl, i) => `
+        <tr>
+          <td><strong>${lbl}</strong></td>
+          <td class="text-right text-green"><strong>${cell(fc.point[i])}</strong></td>
+          <td class="text-right text-muted">${cell(fc.lower[i])}</td>
+          <td class="text-right text-muted">${cell(fc.upper[i])}</td>
+          <td class="text-right text-green"><strong>${pct(fc.annual_pct_point?.[i])}</strong></td>
+          <td class="text-right text-muted">${pct(fc.annual_pct_lower?.[i])}</td>
+          <td class="text-right text-muted">${pct(fc.annual_pct_upper?.[i])}</td>
+        </tr>`).join("");
+
+    document.getElementById("modelNote").innerHTML =
+      `<strong>Model note:</strong> forecasts come from ${model}, the best-performing model ` +
+      `from the project's model-selection experiment. It predicts CPI growth over 1, 2 and 3 months ` +
+      `from recent monthly changes, rolling averages and the calendar month. ` +
+      `Walk-forward validation over ${val.n_validation_steps} forecast origins gave a MAPE of ` +
+      `${val.mape.toFixed(2)}%. Intervals come from the model's own past forecast errors.`;
+
+  } catch(err) {
+    console.error("Forecast error:", err);
+    document.getElementById("forecastBody").innerHTML =
+      `<tr><td colspan="7"><div class="error-box">Could not load forecast: ${err.message}</div></td></tr>`;
+  }
+}
+// Initialise
+(async function init() {
+  await checkStatus();
+  await populateDateSelects();
+  await Promise.all([
+    loadOverview(),
+    loadDrivers(),
+    loadEssential(),
+    loadForecast(),
+  ]);
+})();
+</script>
+</body>
+</html>

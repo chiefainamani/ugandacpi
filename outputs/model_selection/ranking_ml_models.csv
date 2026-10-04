@@ -1,0 +1,5 @@
+model,MAPE_%,RMSE,Worst_period_MAPE_%,rank_MAPE_%,rank_RMSE,rank_Worst_period_MAPE_%,avg_rank,overall_rank
+SVR,0.5337,1.0206,1.1213,1.0,1.0,3.0,1.6667,1
+GradientBoosting,0.5518,1.033,1.0352,2.0,2.0,1.0,1.6667,2
+RandomForest,0.5737,1.07,1.096,3.0,3.0,2.0,2.6667,3
+Lasso,0.586,1.1413,1.2031,4.0,4.0,4.0,4.0,4
