@@ -182,7 +182,7 @@ API_VERSION: str = "v1"
 API_PREFIX: str = f"/api/{API_VERSION}"
 API_HOST: str = "0.0.0.0"
 API_PORT: int = 5000
-API_DEBUG: bool = True   # Set to False in production
+API_DEBUG: bool = False   # Set to False in production
 
 
 

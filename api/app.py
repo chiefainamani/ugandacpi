@@ -599,5 +599,7 @@ def not_found(error):
 # Entry point
 
 if __name__ == "__main__":
-    logger.info(f"Starting Uganda CPI Intelligence API on {API_HOST}:{API_PORT}")
-    app.run(host=API_HOST, port=API_PORT, debug=API_DEBUG)
+    import os
+    port = int(os.environ.get("PORT", API_PORT))
+    logger.info(f"Starting Uganda CPI Intelligence API on port {port}")
+    app.run(host=API_HOST, port=port, debug=False)
