@@ -73,8 +73,8 @@ uganda_cpi_intelligence/
 
 **1. Clone the repository:**
 ```bash
-git clone <repository-url>
-cd uganda_cpi_intelligence
+git clone https://github.com/chiefainamani/ugandacpi
+cd ugandacpi
 ```
 
 **2. Install dependencies:**
